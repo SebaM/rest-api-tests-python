@@ -4,26 +4,30 @@ run-name: Rest API Python Tests
 on:
   schedule:
     - cron: "*/30 * * * *"
-  workflow_dispatch:
-    inputs:
-      python_version:
-        description: 'Python version'
-        required: true
-        default: '3.13.2'
+#  workflow_dispatch:
+#    inputs:
+#      python_version:
+#        description: 'Python version'
+#        required: true
+#        default: '3.13.2'
   push:
 
 jobs:
   Run-Tests:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        python_version: [3.11, 3.12, 3.13]
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.13.2
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
         with:
-          python-version: '${{ github.event.inputs.python_version }}'
+          python-version: '${{ matrix.python-version }}'
 
       - name: Install Deps and Run Tests
         run: |
@@ -43,7 +47,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
-          name: test-results
+          name: test-results-${{ matrix.python-version }}
           path: |
             results.xml
             results.html
@@ -56,7 +60,7 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
           SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
           SLACK_MESSAGE: |
-            ${{ job.status == 'success' && '✅ Python Tests completed successfully' || '❌ Python Tests failed' }} 
+            ${{ job.status == 'success' && '✅ Python Tests completed successfully ${{ matrix.python-version }}' || '❌ Python Tests failed ${{ matrix.python-version }}' }} 
             on branch *${{ github.ref_name }}* by *${{ github.actor }}*.
             Details: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View on GitHub>
           SLACK_TITLE: "Build Status: ${{ job.status }}"
@@ -69,7 +73,7 @@ jobs:
           server_port: ${{ secrets.SMTP_PORT }}
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "${{ job.status == 'success' && '✅ Build Succeeded' || '❌ Build Failed' }} - ${{ github.repository }}"
+          subject: "${{ job.status == 'success' && '✅ Build Succeeded: ${{ matrix.python-version }}' || '❌ Build Failed: ${{ matrix.python-version }}' }} - ${{ github.repository }}"
           html_body: >
             <!DOCTYPE html><html><body>
             <h2>${{ job.status == 'success' && '✅ Build Succeeded' || '❌ Build Failed' }}</h2>
