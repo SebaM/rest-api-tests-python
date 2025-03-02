@@ -2,8 +2,8 @@ name: Python Tests
 run-name: Rest API Python Tests
 
 on:
-  schedule:
-    - cron: "*/30 * * * *"
+#  schedule:
+#    - cron: "*/30 * * * *"
 #  workflow_dispatch:
 #    inputs:
 #      python_version:
